@@ -1,0 +1,20 @@
+divibly is a simple program to watch DVB-T streams using libvlc & GTK.
+
+It needs a channels.conf file in the zap format.
+
+Run it like
+
+    $ divibly channels.conf
+
+Up/Down arrow moves through channels.
+
+1-9 & 0 are mapped to the first 10 channels.
+
+f toggles fullscreen.
+
+Esc/q quits.
+
+You might want to adjust the MAX_CHANNELS & BANDWIDTH_MHZ values.
+
+divibly is Licensed under the GNU General Public License version 2. See
+the COPYING file for details.
