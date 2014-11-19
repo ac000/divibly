@@ -16,5 +16,7 @@ Esc/q quits.
 
 You might want to adjust the MAX_CHANNELS & BANDWIDTH_MHZ values.
 
+It has fairly simple requirements; GTK3, libVLC and xosd.
+
 divibly is Licensed under the GNU General Public License version 2. See
 the COPYING file for details.

@@ -15,10 +15,14 @@
 #include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 
+#include <xosd.h>
+
 #include <vlc/vlc.h>
 
 #define MAX_CHANNELS	 255
 #define BANDWIDTH_MHZ	   8
+
+#define OSD_FONT	"-adobe-utopia-bold-r-normal--96-0-0-0-p-0-iso8859-1"
 
 #define BUF_SIZE	4096
 
@@ -154,10 +158,19 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 {
 	GtkWindow *window = GTK_WINDOW(data);
 	char title[255];
+	xosd *osd;
 
 	snprintf(title, sizeof(title), "divibly (%s)",
 			channels[chan_idx].name);
 	gtk_window_set_title(window, title);
+
+	osd = xosd_create(1);
+	xosd_set_font(osd, OSD_FONT);
+	xosd_set_colour(osd, "white");
+	xosd_set_timeout(osd, 2);
+	xosd_display(osd, 0, XOSD_string, channels[chan_idx].name);
+	xosd_wait_until_no_display(osd);
+	xosd_destroy(osd);
 }
 
 int main(int argc, char *argv[])
