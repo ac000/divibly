@@ -150,6 +150,16 @@ static void cb_set_size(const struct libvlc_event_t *ev, void *data)
 		gtk_window_resize(window, w, h);
 }
 
+static void cb_set_title(const struct libvlc_event_t *ev, void *data)
+{
+	GtkWindow *window = GTK_WINDOW(data);
+	char title[255];
+
+	snprintf(title, sizeof(title), "divibly (%s)",
+			channels[chan_idx].name);
+	gtk_window_set_title(window, title);
+}
+
 int main(int argc, char *argv[])
 {
 	GtkWidget *window;
@@ -184,6 +194,8 @@ int main(int argc, char *argv[])
 	vevent = libvlc_media_player_event_manager(media_player);
 	libvlc_event_attach(vevent, libvlc_MediaPlayerVout, cb_set_size,
 			window);
+	libvlc_event_attach(vevent, libvlc_MediaPlayerMediaChanged,
+			cb_set_title, window);
 
 	gtk_widget_show_all(window);
 	gtk_main();
