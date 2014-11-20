@@ -113,7 +113,7 @@ static void get_channel_info(const char *channels_conf)
 	fclose(fp);
 }
 
-static void play_channel(int chan_idx)
+static void play_channel(void)
 {
 	libvlc_media_t *media;
 	char f_opt[64];
@@ -156,17 +156,19 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 		break;
 	case GDK_KEY_0:
 		chan_idx = 9;
-		play_channel(chan_idx);
+		play_channel();
 		break;
 	case GDK_KEY_1 ... GDK_KEY_9:
 		chan_idx = event->keyval - GDK_KEY_1;
-		play_channel(chan_idx);
+		play_channel();
 		break;
 	case GDK_KEY_Up:
-		play_channel(--chan_idx);
+		chan_idx--;
+		play_channel();
 		break;
 	case GDK_KEY_Down:
-		play_channel(++chan_idx);
+		chan_idx++;
+		play_channel();
 		break;
 	case GDK_KEY_q:
 	case GDK_KEY_Escape:
@@ -181,7 +183,7 @@ static void cb_realize(GtkWidget *widget, gpointer data)
 
 	libvlc_video_set_deinterlace(media_player, "yadiff2x");
 
-	play_channel(chan_idx);
+	play_channel();
 }
 
 static void cb_set_title(const struct libvlc_event_t *ev, void *data)
