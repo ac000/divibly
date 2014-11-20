@@ -7,9 +7,13 @@
  * See COPYING
  */
 
+#define	_GNU_SOURCE	/* SA_RESTART, timer_*() */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <time.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
@@ -31,6 +35,8 @@ static libvlc_instance_t *vlc_inst;
 static bool fullscreen = true;
 static int nr_channels;
 static int chan_idx;
+static xosd *osd_chan_name;
+static timer_t osd_timerid;
 
 struct chan_info {
 	char *name;
@@ -44,6 +50,41 @@ static struct chan_info channels[MAX_CHANNELS];
 static void destroy(GtkWidget *widget, gpointer data)
 {
     gtk_main_quit();
+}
+
+static void kill_osd(int sig, siginfo_t *si, void *uc)
+{
+	timer_delete(osd_timerid);
+
+	if (!osd_chan_name)
+		return;
+
+	xosd_destroy(osd_chan_name);
+	osd_chan_name = NULL;
+}
+
+static void set_osd_timer(void)
+{
+	struct itimerspec its;
+	struct sigevent sev;
+	struct sigaction action;
+
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	action.sa_sigaction = kill_osd;
+	sigaction(SIGRTMIN, &action, NULL);
+
+	sev.sigev_notify = SIGEV_SIGNAL;
+	sev.sigev_signo = SIGRTMIN;
+	sev.sigev_value.sival_ptr = &osd_timerid;
+	timer_create(CLOCK_MONOTONIC, &sev, &osd_timerid);
+
+	its.it_value.tv_sec = 2;
+	its.it_value.tv_nsec = 0;
+	its.it_interval.tv_sec = its.it_value.tv_sec;
+	its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+	timer_settime(osd_timerid, 0, &its, NULL);
 }
 
 static void get_channel_info(const char *channels_conf)
@@ -146,19 +187,23 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 {
 	GtkWindow *window = GTK_WINDOW(data);
 	char title[255];
-	xosd *osd;
 
 	snprintf(title, sizeof(title), "divibly (%s)",
 			channels[chan_idx].name);
 	gtk_window_set_title(window, title);
 
-	osd = xosd_create(1);
-	xosd_set_font(osd, OSD_FONT);
-	xosd_set_colour(osd, "white");
-	xosd_set_timeout(osd, 2);
-	xosd_display(osd, 0, XOSD_string, channels[chan_idx].name);
-	xosd_wait_until_no_display(osd);
-	xosd_destroy(osd);
+	if (osd_timerid) {
+		timer_delete(osd_timerid);
+		xosd_destroy(osd_chan_name);
+	}
+
+	osd_chan_name = xosd_create(1);
+	xosd_set_font(osd_chan_name, OSD_FONT);
+	xosd_set_colour(osd_chan_name, "white");
+	xosd_set_timeout(osd_chan_name, 2);
+	xosd_display(osd_chan_name, 0, XOSD_string, channels[chan_idx].name);
+
+	set_osd_timer();
 }
 
 int main(int argc, char *argv[])
