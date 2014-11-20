@@ -27,6 +27,7 @@
 #define BANDWIDTH_MHZ	   8
 
 #define OSD_FONT	"-adobe-utopia-bold-r-normal--96-0-0-0-p-0-iso8859-1"
+#define OSD_TIMEOUT	2
 
 #define BUF_SIZE	4096
 
@@ -79,7 +80,7 @@ static void set_osd_timer(void)
 	sev.sigev_value.sival_ptr = &osd_timerid;
 	timer_create(CLOCK_MONOTONIC, &sev, &osd_timerid);
 
-	its.it_value.tv_sec = 2;
+	its.it_value.tv_sec = OSD_TIMEOUT;
 	its.it_value.tv_nsec = 0;
 	its.it_interval.tv_sec = its.it_value.tv_sec;
 	its.it_interval.tv_nsec = its.it_value.tv_nsec;
@@ -200,7 +201,7 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 	osd_chan_name = xosd_create(1);
 	xosd_set_font(osd_chan_name, OSD_FONT);
 	xosd_set_colour(osd_chan_name, "white");
-	xosd_set_timeout(osd_chan_name, 2);
+	xosd_set_timeout(osd_chan_name, OSD_TIMEOUT);
 	xosd_display(osd_chan_name, 0, XOSD_string, channels[chan_idx].name);
 
 	set_osd_timer();
