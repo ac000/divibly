@@ -12,6 +12,8 @@ Up/Down arrow moves through channels.
 
 f toggles fullscreen.
 
+s toggles subtitles.
+
 Esc/q quits.
 
 You might want to adjust the MAX_CHANNELS & BANDWIDTH_MHZ values.
