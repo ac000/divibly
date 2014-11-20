@@ -28,7 +28,7 @@
 
 static libvlc_media_player_t *media_player;
 static libvlc_instance_t *vlc_inst;
-static bool fullscreen;
+static bool fullscreen = true;
 static int nr_channels;
 static int chan_idx;
 
@@ -140,20 +140,6 @@ static void cb_realize(GtkWidget *widget, gpointer data)
 	play_channel(chan_idx);
 }
 
-static void cb_set_size(const struct libvlc_event_t *ev, void *data)
-{
-	int err;
-	unsigned int w;
-	unsigned int h;
-	GtkWindow *window = GTK_WINDOW(data);
-
-	err = libvlc_video_get_size(media_player, 0, &w, &h);
-	if (err || !w || !h)
-		gtk_window_resize(window, 1024, 576);
-	else
-		gtk_window_resize(window, w, h);
-}
-
 static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 {
 	GtkWindow *window = GTK_WINDOW(data);
@@ -191,6 +177,8 @@ int main(int argc, char *argv[])
 	g_signal_connect(window, "destroy", G_CALLBACK(destroy), NULL);
 	g_signal_connect(window, "key_press_event",G_CALLBACK(cb_input), NULL);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 0);
+	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 576);
+	gtk_window_fullscreen(GTK_WINDOW(window));
 	gtk_window_set_title(GTK_WINDOW(window), "divibly");
 
 	get_channel_info(argv[1]);
@@ -205,8 +193,6 @@ int main(int argc, char *argv[])
 			NULL);
 
 	vevent = libvlc_media_player_event_manager(media_player);
-	libvlc_event_attach(vevent, libvlc_MediaPlayerVout, cb_set_size,
-			window);
 	libvlc_event_attach(vevent, libvlc_MediaPlayerMediaChanged,
 			cb_set_title, window);
 
