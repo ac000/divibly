@@ -64,6 +64,30 @@ static void kill_osd(int sig, siginfo_t *si, void *uc)
 	osd_chan_name = NULL;
 }
 
+static void set_spu(void)
+{
+	static int spu = -1;
+	libvlc_track_description_t *desc;
+
+	/* Toggle subtitles off */
+	if (spu > -1) {
+		spu = -1;
+		goto out;
+	}
+
+	/* Find the subtitle id */
+	desc = libvlc_video_get_spu_description(media_player);
+	while (desc) {
+		spu = desc->i_id;
+		if (spu > -1)
+			break;
+		desc = desc->p_next;
+	}
+
+out:
+	libvlc_video_set_spu(media_player, spu);
+}
+
 static void set_osd_timer(void)
 {
 	struct itimerspec its;
@@ -169,6 +193,9 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 	case GDK_KEY_Down:
 		chan_idx++;
 		play_channel();
+		break;
+	case GDK_KEY_s:
+		set_spu();
 		break;
 	case GDK_KEY_q:
 	case GDK_KEY_Escape:
