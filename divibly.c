@@ -203,7 +203,6 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 	osd_chan_name = xosd_create(1);
 	xosd_set_font(osd_chan_name, OSD_FONT);
 	xosd_set_colour(osd_chan_name, "white");
-	xosd_set_timeout(osd_chan_name, OSD_TIMEOUT);
 	xosd_display(osd_chan_name, 0, XOSD_string, channels[chan_idx].name);
 
 	set_osd_timer();
