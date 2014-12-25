@@ -64,30 +64,6 @@ static void kill_osd(int sig, siginfo_t *si, void *uc)
 	osd_display = NULL;
 }
 
-static void set_spu(void)
-{
-	static int spu = -1;
-	libvlc_track_description_t *desc;
-
-	/* Toggle subtitles off */
-	if (spu > -1) {
-		spu = -1;
-		goto out;
-	}
-
-	/* Find the subtitle id */
-	desc = libvlc_video_get_spu_description(media_player);
-	while (desc) {
-		spu = desc->i_id;
-		if (spu > -1)
-			break;
-		desc = desc->p_next;
-	}
-
-out:
-	libvlc_video_set_spu(media_player, spu);
-}
-
 static void set_osd_timer(void)
 {
 	struct itimerspec its;
@@ -110,6 +86,46 @@ static void set_osd_timer(void)
 	its.it_interval.tv_nsec = its.it_value.tv_nsec;
 
 	timer_settime(osd_timerid, 0, &its, NULL);
+}
+
+static void set_spu(void)
+{
+	static int spu = -1;
+	libvlc_track_description_t *desc;
+
+	if (osd_timerid) {
+		timer_delete(osd_timerid);
+		xosd_destroy(osd_display);
+	}
+
+	osd_display = xosd_create(1);
+	xosd_set_font(osd_display, OSD_FONT);
+	xosd_set_colour(osd_display, "white");
+
+	/* Toggle subtitles off */
+	if (spu > -1) {
+		spu = -1;
+		xosd_display(osd_display, 0, XOSD_string, "Subtitles: Off");
+		goto out;
+	}
+
+	/* Find the subtitle id */
+	desc = libvlc_video_get_spu_description(media_player);
+	while (desc) {
+		spu = desc->i_id;
+		if (spu > -1)
+			break;
+		desc = desc->p_next;
+	}
+
+	if (spu == -1)
+		xosd_display(osd_display, 0, XOSD_string, "Subtitles: None");
+	else
+		xosd_display(osd_display, 0, XOSD_string, "Subtitles: On");
+
+out:
+	libvlc_video_set_spu(media_player, spu);
+	set_osd_timer();
 }
 
 static void get_channel_info(const char *channels_conf)
