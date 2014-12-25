@@ -170,6 +170,7 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 {
 	switch (event->keyval) {
 	case GDK_KEY_f:
+	case GDK_KEY_F:
 		if (!fullscreen) {
 			gtk_window_fullscreen(GTK_WINDOW(window));
 			fullscreen = true;
@@ -195,9 +196,11 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 		play_channel();
 		break;
 	case GDK_KEY_s:
+	case GDK_KEY_S:
 		set_spu();
 		break;
 	case GDK_KEY_q:
+	case GDK_KEY_Q:
 	case GDK_KEY_Escape:
 		gtk_main_quit();
 	}
