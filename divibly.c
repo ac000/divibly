@@ -188,11 +188,11 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 		play_channel();
 		break;
 	case GDK_KEY_Up:
-		chan_idx--;
+		chan_idx++;
 		play_channel();
 		break;
 	case GDK_KEY_Down:
-		chan_idx++;
+		chan_idx--;
 		play_channel();
 		break;
 	case GDK_KEY_s:
