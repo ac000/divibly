@@ -36,7 +36,7 @@ static libvlc_instance_t *vlc_inst;
 static bool fullscreen = true;
 static int nr_channels;
 static int chan_idx;
-static xosd *osd_chan_name;
+static xosd *osd_display;
 static timer_t osd_timerid;
 
 struct chan_info {
@@ -57,11 +57,11 @@ static void kill_osd(int sig, siginfo_t *si, void *uc)
 {
 	timer_delete(osd_timerid);
 
-	if (!osd_chan_name)
+	if (!osd_display)
 		return;
 
-	xosd_destroy(osd_chan_name);
-	osd_chan_name = NULL;
+	xosd_destroy(osd_display);
+	osd_display = NULL;
 }
 
 static void set_spu(void)
@@ -227,13 +227,13 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 
 	if (osd_timerid) {
 		timer_delete(osd_timerid);
-		xosd_destroy(osd_chan_name);
+		xosd_destroy(osd_display);
 	}
 
-	osd_chan_name = xosd_create(1);
-	xosd_set_font(osd_chan_name, OSD_FONT);
-	xosd_set_colour(osd_chan_name, "white");
-	xosd_display(osd_chan_name, 0, XOSD_string, channels[chan_idx].name);
+	osd_display = xosd_create(1);
+	xosd_set_font(osd_display, OSD_FONT);
+	xosd_set_colour(osd_display, "white");
+	xosd_display(osd_display, 0, XOSD_string, channels[chan_idx].name);
 
 	set_osd_timer();
 }
