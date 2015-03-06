@@ -1,7 +1,7 @@
 /*
  * divibly - A simple DVB-T viewer
  *
- * Copyright (C) 2014		Andrew Clayton <andrew@digital-domain.net>
+ * Copyright (C) 2014 - 2015	Andrew Clayton <andrew@digital-domain.net>
  *
  * Licensed under the GNU General Public License V2
  * See COPYING
@@ -227,7 +227,7 @@ static void cb_realize(GtkWidget *widget, gpointer data)
 	libvlc_media_player_set_xwindow(media_player, GDK_WINDOW_XID(
 				gtk_widget_get_window(widget)));
 
-	libvlc_video_set_deinterlace(media_player, "yadiff2x");
+	libvlc_video_set_deinterlace(media_player, "yadif2x");
 
 	play_channel();
 }
