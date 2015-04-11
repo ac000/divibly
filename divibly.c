@@ -50,7 +50,7 @@ static struct chan_info channels[MAX_CHANNELS];
 
 static void destroy(GtkWidget *widget, gpointer data)
 {
-    gtk_main_quit();
+	gtk_main_quit();
 }
 
 static void kill_osd(int sig, siginfo_t *si, void *uc)
