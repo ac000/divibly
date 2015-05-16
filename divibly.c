@@ -23,13 +23,13 @@
 
 #include <vlc/vlc.h>
 
-#define MAX_CHANNELS	 255
 #define BANDWIDTH_MHZ	   8
 
 #define OSD_FONT	"-adobe-utopia-bold-r-normal--96-0-0-0-p-0-iso8859-1"
 #define OSD_TIMEOUT	2
 
 #define BUF_SIZE	4096
+#define CHAN_ALLOC_SZ	  25
 
 static libvlc_media_player_t *media_player;
 static libvlc_instance_t *vlc_inst;
@@ -46,7 +46,16 @@ struct chan_info {
 	unsigned int pid;
 };
 
-static struct chan_info channels[MAX_CHANNELS];
+static struct chan_info *channels;
+
+static void free_channels(void)
+{
+	int i;
+
+	for (i = 0; i < nr_channels; i++)
+		free(channels[i].name);
+	free(channels);
+}
 
 static void destroy(GtkWidget *widget, gpointer data)
 {
@@ -133,20 +142,19 @@ static void get_channel_info(const char *channels_conf)
 	char buf[BUF_SIZE];
 	int i = 0;
 	FILE *fp;
+	size_t ci_sz = sizeof(struct chan_info);
 
 	fp = fopen(channels_conf, "r");
 	while (fgets(buf, BUF_SIZE, fp)) {
+		if (i % CHAN_ALLOC_SZ == 0)
+			channels = realloc(channels,
+					i * ci_sz + CHAN_ALLOC_SZ * ci_sz);
 		sscanf(buf, "%m[^:]:%u:%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:"
 				"%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:%*u:%*u:%u",
 				&channels[i].name, &channels[i].freq,
 				&channels[i].pid);
 		channels[i].bandwidth = BANDWIDTH_MHZ;
 		i++;
-		if (i == MAX_CHANNELS) {
-			fprintf(stderr, "Max number of channels reached. "
-				"Please increase MAX_CHANNELS\n");
-			exit(EXIT_FAILURE);
-		}
 	}
 	nr_channels = i;
 
@@ -296,6 +304,7 @@ int main(int argc, char *argv[])
 
 	libvlc_media_player_release(media_player);
 	libvlc_release(vlc_inst);
+	free_channels();
 
 	exit(EXIT_SUCCESS);
 }

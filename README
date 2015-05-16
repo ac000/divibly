@@ -16,7 +16,7 @@ s toggles subtitles.
 
 Esc/q quits.
 
-You might want to adjust the MAX_CHANNELS & BANDWIDTH_MHZ values.
+You might need to adjust the BANDWIDTH_MHZ value.
 
 It has fairly simple requirements; GTK3, libVLC and xosd.
 
