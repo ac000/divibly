@@ -23,8 +23,6 @@
 
 #include <vlc/vlc.h>
 
-#define BANDWIDTH_MHZ	   8
-
 #define OSD_FONT	"-adobe-utopia-bold-r-normal--96-0-0-0-p-0-iso8859-1"
 #define OSD_TIMEOUT	2
 
