@@ -16,8 +16,6 @@ s toggles subtitles.
 
 Esc/q quits.
 
-You might need to adjust the BANDWIDTH_MHZ value.
-
 It has fairly simple requirements; GTK3, libVLC and xosd.
 
 divibly is Licensed under the GNU General Public License version 2. See

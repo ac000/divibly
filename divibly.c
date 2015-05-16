@@ -149,11 +149,11 @@ static void get_channel_info(const char *channels_conf)
 		if (i % CHAN_ALLOC_SZ == 0)
 			channels = realloc(channels,
 					i * ci_sz + CHAN_ALLOC_SZ * ci_sz);
-		sscanf(buf, "%m[^:]:%u:%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:"
-				"%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:%*u:%*u:%u",
+		sscanf(buf, "%m[^:]:%u:%*m[^:]:BANDWIDTH_%u_MHZ:%*m[^:]:"
+				"%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:%*m[^:]:"
+				"%*u:%*u:%u",
 				&channels[i].name, &channels[i].freq,
-				&channels[i].pid);
-		channels[i].bandwidth = BANDWIDTH_MHZ;
+				&channels[i].bandwidth, &channels[i].pid);
 		i++;
 	}
 	nr_channels = i;
