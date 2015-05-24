@@ -23,6 +23,9 @@
 
 #include <vlc/vlc.h>
 
+#define WINDOW_W	1024
+#define WINDOW_H	 576
+
 #define OSD_FONT	"-adobe-utopia-bold-r-normal--96-0-0-0-p-0-iso8859-1"
 #define OSD_TIMEOUT	2
 
@@ -201,6 +204,10 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 			fullscreen = false;
 		}
 		break;
+	case GDK_KEY_z:
+	case GDK_KEY_Z:
+		gtk_window_resize(GTK_WINDOW(window), WINDOW_W, WINDOW_H);
+		break;
 	case GDK_KEY_0:
 		chan_idx = 9;
 		play_channel();
@@ -278,7 +285,7 @@ int main(int argc, char *argv[])
 	g_signal_connect(window, "destroy", G_CALLBACK(destroy), NULL);
 	g_signal_connect(window, "key_press_event",G_CALLBACK(cb_input), NULL);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 0);
-	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 576);
+	gtk_window_set_default_size(GTK_WINDOW(window), WINDOW_W, WINDOW_H);
 	gtk_window_fullscreen(GTK_WINDOW(window));
 	gtk_window_set_title(GTK_WINDOW(window), "divibly");
 
