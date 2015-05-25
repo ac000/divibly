@@ -296,6 +296,8 @@ int main(int argc, char *argv[])
 	gtk_widget_modify_bg(player, GTK_STATE_NORMAL, &player_bg_color);
 
 	vlc_inst = libvlc_new(0, NULL);
+	libvlc_set_user_agent(vlc_inst, "divibly", NULL);
+
 	media_player = libvlc_media_player_new(vlc_inst);
 	g_signal_connect(G_OBJECT(player), "realize", G_CALLBACK(cb_realize),
 			NULL);
