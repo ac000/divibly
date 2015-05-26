@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 {
 	GtkWidget *window;
 	GtkWidget *player;
-	const GdkColor player_bg_color = { 0, 0, 0, 0 };
+	const GdkRGBA player_bg_color = { 0, 0, 0, 0 };
 	libvlc_event_manager_t *vevent;
 
 	if (argc < 2) {
@@ -293,7 +293,8 @@ int main(int argc, char *argv[])
 
 	player = gtk_drawing_area_new();
 	gtk_container_add(GTK_CONTAINER(window), player);
-	gtk_widget_modify_bg(player, GTK_STATE_NORMAL, &player_bg_color);
+	gtk_widget_override_background_color(player, GTK_STATE_NORMAL,
+			&player_bg_color);
 
 	vlc_inst = libvlc_new(0, NULL);
 	libvlc_set_user_agent(vlc_inst, "divibly", NULL);
