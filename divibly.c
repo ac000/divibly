@@ -32,6 +32,8 @@
 #define BUF_SIZE	4096
 #define CHAN_ALLOC_SZ	  25
 
+enum { CHAN_NAME = 0, CHAN_IDX };
+
 static libvlc_media_player_t *media_player;
 static libvlc_instance_t *vlc_inst;
 static bool fullscreen = true;
@@ -39,6 +41,15 @@ static int nr_channels;
 static int chan_idx;
 static xosd *osd_display;
 static timer_t osd_timerid;
+
+struct widgets {
+	GtkWidget *window;
+	GtkWidget *player;
+	GtkWidget *box;
+	GtkWidget *chan_srch;
+	GtkEntryCompletion *completion;
+	GtkListStore *liststore;
+};
 
 struct chan_info {
 	char *name;
@@ -138,7 +149,8 @@ out:
 	set_osd_timer();
 }
 
-static void get_channel_info(const char *channels_conf)
+static void get_channel_info(const char *channels_conf,
+			     GtkListStore *liststore)
 {
 	char buf[BUF_SIZE];
 	int i = 0;
@@ -147,6 +159,8 @@ static void get_channel_info(const char *channels_conf)
 
 	fp = fopen(channels_conf, "r");
 	while (fgets(buf, BUF_SIZE, fp)) {
+		GtkTreeIter iter;
+
 		if (i % CHAN_ALLOC_SZ == 0)
 			channels = realloc(channels,
 					i * ci_sz + CHAN_ALLOC_SZ * ci_sz);
@@ -155,6 +169,9 @@ static void get_channel_info(const char *channels_conf)
 				"%*u:%*u:%u",
 				&channels[i].name, &channels[i].freq,
 				&channels[i].bandwidth, &channels[i].pid);
+		gtk_list_store_append(liststore, &iter);
+		gtk_list_store_set(liststore, &iter, CHAN_NAME,
+				channels[i].name, CHAN_IDX, i, -1);
 		i++;
 	}
 	nr_channels = i;
@@ -191,22 +208,44 @@ static void play_channel(void)
 	libvlc_media_player_play(media_player);
 }
 
-static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
+static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
+			  struct widgets *widgets)
+{
+	if (!gtk_widget_has_focus(widgets->chan_srch))
+		return FALSE;
+
+	switch (event->keyval) {
+	case GDK_KEY_Escape:
+		/* cancel channel search */
+		gtk_widget_hide(widgets->chan_srch);
+		gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), "");
+		gtk_widget_grab_focus(widgets->player);
+
+		return TRUE;
+	}
+
+	/* Allow cb_input to process events */
+	return FALSE;
+}
+
+static void cb_input(GtkWidget *player, GdkEventKey *event,
+		     struct widgets *widgets)
 {
 	switch (event->keyval) {
 	case GDK_KEY_f:
 	case GDK_KEY_F:
 		if (!fullscreen) {
-			gtk_window_fullscreen(GTK_WINDOW(window));
+			gtk_window_fullscreen(GTK_WINDOW(widgets->window));
 			fullscreen = true;
 		} else {
-			gtk_window_unfullscreen(GTK_WINDOW(window));
+			gtk_window_unfullscreen(GTK_WINDOW(widgets->window));
 			fullscreen = false;
 		}
 		break;
 	case GDK_KEY_z:
 	case GDK_KEY_Z:
-		gtk_window_resize(GTK_WINDOW(window), WINDOW_W, WINDOW_H);
+		gtk_window_resize(GTK_WINDOW(widgets->window), WINDOW_W,
+				WINDOW_H);
 		break;
 	case GDK_KEY_0:
 		chan_idx = 9;
@@ -228,11 +267,32 @@ static void cb_input(GtkWidget *window, GdkEventKey *event, gpointer data)
 	case GDK_KEY_S:
 		set_spu();
 		break;
+	case GDK_KEY_slash:
+		gtk_widget_grab_focus(widgets->chan_srch);
+		gtk_widget_show(widgets->chan_srch);
+		break;
 	case GDK_KEY_q:
 	case GDK_KEY_Q:
 	case GDK_KEY_Escape:
 		gtk_main_quit();
 	}
+}
+
+static gboolean goto_channel(GtkEntryCompletion *widget, GtkTreeModel *model,
+			     GtkTreeIter *iter, struct widgets *widgets)
+{
+	char *chan;
+
+	gtk_tree_model_get(model, iter, CHAN_NAME, &chan, CHAN_IDX, &chan_idx,
+			-1);
+	gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), chan);
+	g_free(chan);
+	play_channel();
+	gtk_widget_hide(widgets->chan_srch);
+	gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), "");
+	gtk_widget_grab_focus(widgets->player);
+
+	return TRUE;
 }
 
 static void cb_realize(GtkWidget *widget, gpointer data)
@@ -269,8 +329,7 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 
 int main(int argc, char *argv[])
 {
-	GtkWidget *window;
-	GtkWidget *player;
+	struct widgets *widgets;
 	const GdkRGBA player_bg_color = { 0, 0, 0, 0 };
 	libvlc_event_manager_t *vevent;
 
@@ -281,37 +340,72 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(window, "destroy", G_CALLBACK(destroy), NULL);
-	g_signal_connect(window, "key_press_event",G_CALLBACK(cb_input), NULL);
-	gtk_container_set_border_width(GTK_CONTAINER(window), 0);
-	gtk_window_set_default_size(GTK_WINDOW(window), WINDOW_W, WINDOW_H);
-	gtk_window_fullscreen(GTK_WINDOW(window));
-	gtk_window_set_title(GTK_WINDOW(window), "divibly");
+	widgets = g_slice_new(struct widgets);
 
-	get_channel_info(argv[1]);
+	/* Create the main window */
+	widgets->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(widgets->window, "destroy", G_CALLBACK(destroy),
+			NULL);
+	g_signal_connect(widgets->window, "key_press_event",
+			G_CALLBACK(cb_inputw), widgets);
+	gtk_container_set_border_width(GTK_CONTAINER(widgets->window), 0);
+	gtk_window_set_default_size(GTK_WINDOW(widgets->window), WINDOW_W,
+			WINDOW_H);
+	gtk_window_fullscreen(GTK_WINDOW(widgets->window));
+	gtk_window_set_title(GTK_WINDOW(widgets->window), "divibly");
 
-	player = gtk_drawing_area_new();
-	gtk_container_add(GTK_CONTAINER(window), player);
-	gtk_widget_override_background_color(player, GTK_STATE_NORMAL,
+	widgets->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_box_set_homogeneous(GTK_BOX(widgets->box), FALSE);
+	gtk_container_add(GTK_CONTAINER(widgets->window), widgets->box);
+
+	/* Create the container for the video */
+	widgets->player = gtk_drawing_area_new();
+	gtk_widget_override_background_color(widgets->player, GTK_STATE_NORMAL,
 			&player_bg_color);
+	gtk_box_pack_start(GTK_BOX(widgets->box), widgets->player, TRUE, TRUE,
+			0);
+	gtk_widget_set_can_focus(widgets->player, TRUE);
+	gtk_widget_grab_focus(widgets->player);
 
+	/* Create a List Store to hold channel name and index */
+	widgets->liststore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+	get_channel_info(argv[1], widgets->liststore);
+
+	/* Create a text entry/completion for doing channel searches */
+	widgets->chan_srch = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(widgets->box), widgets->chan_srch, FALSE,
+			FALSE, 0);
+	widgets->completion = gtk_entry_completion_new();
+	gtk_entry_completion_set_model(widgets->completion,
+			GTK_TREE_MODEL(widgets->liststore));
+	gtk_entry_completion_set_text_column(widgets->completion, CHAN_NAME);
+	gtk_entry_set_completion(GTK_ENTRY(widgets->chan_srch),
+			widgets->completion);
+	g_signal_connect(G_OBJECT(widgets->completion), "match-selected",
+			G_CALLBACK(goto_channel), widgets);
+	g_object_unref(widgets->completion);
+	g_signal_connect(widgets->player, "key_press_event",
+			G_CALLBACK(cb_input), widgets);
+
+	/* Setup the VLC side of things */
 	vlc_inst = libvlc_new(0, NULL);
 	libvlc_set_user_agent(vlc_inst, "divibly", NULL);
 
 	media_player = libvlc_media_player_new(vlc_inst);
-	g_signal_connect(G_OBJECT(player), "realize", G_CALLBACK(cb_realize),
-			NULL);
+	g_signal_connect(G_OBJECT(widgets->player), "realize",
+			G_CALLBACK(cb_realize), NULL);
 
 	vevent = libvlc_media_player_event_manager(media_player);
 	libvlc_event_attach(vevent, libvlc_MediaPlayerMediaChanged,
-			cb_set_title, window);
+			cb_set_title, widgets->window);
 
-	gtk_widget_show_all(window);
+	gtk_widget_show_all(widgets->window);
+	gtk_widget_hide(widgets->chan_srch);
 	gtk_main();
 
 	libvlc_media_player_release(media_player);
 	libvlc_release(vlc_inst);
+	g_slice_free(struct widgets, widgets);
 	free_channels();
 
 	exit(EXIT_SUCCESS);
