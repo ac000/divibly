@@ -109,11 +109,8 @@ static void set_osd_timer(void)
 	timer_settime(osd_timerid, 0, &its, NULL);
 }
 
-static void set_spu(void)
+static void set_osd(const char *msg)
 {
-	static int spu = -1;
-	libvlc_track_description_t *desc;
-
 	if (osd_timerid) {
 		timer_delete(osd_timerid);
 		xosd_destroy(osd_display);
@@ -123,10 +120,19 @@ static void set_spu(void)
 	xosd_set_font(osd_display, OSD_FONT);
 	xosd_set_colour(osd_display, "white");
 
+	xosd_display(osd_display, 0, XOSD_string, msg);
+	set_osd_timer();
+}
+
+static void set_spu(void)
+{
+	static int spu = -1;
+	libvlc_track_description_t *desc;
+
 	/* Toggle subtitles off */
 	if (spu > -1) {
 		spu = -1;
-		xosd_display(osd_display, 0, XOSD_string, "Subtitles: Off");
+		set_osd("Subtitles: Off");
 		goto out;
 	}
 
@@ -140,13 +146,12 @@ static void set_spu(void)
 	}
 
 	if (spu == -1)
-		xosd_display(osd_display, 0, XOSD_string, "Subtitles: None");
+		set_osd("Subtitles: None");
 	else
-		xosd_display(osd_display, 0, XOSD_string, "Subtitles: On");
+		set_osd("Subtitles: On");
 
 out:
 	libvlc_video_set_spu(media_player, spu);
-	set_osd_timer();
 }
 
 static void get_channel_info(const char *channels_conf,
@@ -271,6 +276,18 @@ static void cb_input(GtkWidget *player, GdkEventKey *event,
 		gtk_widget_grab_focus(widgets->chan_srch);
 		gtk_widget_show(widgets->chan_srch);
 		break;
+	case GDK_KEY_m:
+	case GDK_KEY_M: {
+		bool mute;
+
+		libvlc_audio_toggle_mute(media_player);
+		mute = libvlc_audio_get_mute(media_player);
+		if (!mute)
+			set_osd("Mute: on");
+		else
+			set_osd("Mute: off");
+		break;
+	}
 	case GDK_KEY_q:
 	case GDK_KEY_Q:
 	case GDK_KEY_Escape:
