@@ -16,6 +16,9 @@ z resizes the screen back to the default
 
 s toggles subtitles.
 
+/ shows an entry box where you can search for a channel, just start typing...
+  Esc will cancel this entry.
+
 Esc/q quits.
 
 It has fairly simple requirements; GTK3, libVLC and xosd.
