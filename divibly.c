@@ -69,11 +69,6 @@ static void free_channels(void)
 	free(channels);
 }
 
-static void destroy(GtkWidget *widget, gpointer data)
-{
-	gtk_main_quit();
-}
-
 static void kill_osd(int sig, siginfo_t *si, void *uc)
 {
 	timer_delete(osd_timerid);
@@ -361,7 +356,7 @@ int main(int argc, char *argv[])
 
 	/* Create the main window */
 	widgets->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(widgets->window, "destroy", G_CALLBACK(destroy),
+	g_signal_connect(widgets->window, "destroy", G_CALLBACK(gtk_main_quit),
 			NULL);
 	g_signal_connect(widgets->window, "key_press_event",
 			G_CALLBACK(cb_inputw), widgets);
