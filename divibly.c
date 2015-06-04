@@ -247,6 +247,10 @@ static void cb_input(GtkWidget *player, GdkEventKey *event,
 		gtk_window_resize(GTK_WINDOW(widgets->window), WINDOW_W,
 				WINDOW_H);
 		break;
+	case GDK_KEY_r:
+	case GDK_KEY_R:
+		play_channel();
+		break;
 	case GDK_KEY_0:
 		chan_idx = 9;
 		play_channel();

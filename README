@@ -14,6 +14,8 @@ f toggles fullscreen.
 
 z resizes the screen back to the default
 
+r resets the current channel, e.g if there's a loss of audio...
+
 m toggles muting of audio.
 
 s toggles subtitles.
