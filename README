@@ -25,6 +25,8 @@ s toggles subtitles.
 
 Esc/q quits.
 
+A double left mouse click toggles full screen.
+
 It has fairly simple requirements; GTK3, libVLC and xosd.
 
 divibly is Licensed under the GNU General Public License version 2. See

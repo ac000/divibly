@@ -69,6 +69,17 @@ static void free_channels(void)
 	free(channels);
 }
 
+static void toggle_fullscreen(struct widgets *widgets)
+{
+	if (!fullscreen) {
+		gtk_window_fullscreen(GTK_WINDOW(widgets->window));
+		fullscreen = true;
+	} else {
+		gtk_window_unfullscreen(GTK_WINDOW(widgets->window));
+		fullscreen = false;
+	}
+}
+
 static void kill_osd(int sig, siginfo_t *si, void *uc)
 {
 	timer_delete(osd_timerid);
@@ -228,19 +239,13 @@ static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
 	return FALSE;
 }
 
-static void cb_input(GtkWidget *player, GdkEventKey *event,
-		     struct widgets *widgets)
+static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
+			      struct widgets *widgets)
 {
 	switch (event->keyval) {
 	case GDK_KEY_f:
 	case GDK_KEY_F:
-		if (!fullscreen) {
-			gtk_window_fullscreen(GTK_WINDOW(widgets->window));
-			fullscreen = true;
-		} else {
-			gtk_window_unfullscreen(GTK_WINDOW(widgets->window));
-			fullscreen = false;
-		}
+		toggle_fullscreen(widgets);
 		break;
 	case GDK_KEY_z:
 	case GDK_KEY_Z:
@@ -292,6 +297,17 @@ static void cb_input(GtkWidget *player, GdkEventKey *event,
 	case GDK_KEY_Escape:
 		gtk_main_quit();
 	}
+
+	return TRUE;
+}
+
+static gboolean cb_input_mouse(GtkWidget *player, GdkEventKey *event,
+			       struct widgets *widgets)
+{
+	if (event->type == GDK_2BUTTON_PRESS)
+		toggle_fullscreen(widgets);
+
+	return TRUE;
 }
 
 static gboolean goto_channel(GtkEntryCompletion *widget, GtkTreeModel *model,
@@ -382,6 +398,7 @@ int main(int argc, char *argv[])
 			0);
 	gtk_widget_set_can_focus(widgets->player, TRUE);
 	gtk_widget_grab_focus(widgets->player);
+	gtk_widget_add_events(widgets->player, GDK_BUTTON_PRESS_MASK);
 
 	/* Create a List Store to hold channel name and index */
 	widgets->liststore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -401,7 +418,9 @@ int main(int argc, char *argv[])
 			G_CALLBACK(goto_channel), widgets);
 	g_object_unref(widgets->completion);
 	g_signal_connect(widgets->player, "key_press_event",
-			G_CALLBACK(cb_input), widgets);
+			G_CALLBACK(cb_input_keyb), widgets);
+	g_signal_connect(widgets->player, "button_press_event",
+			G_CALLBACK(cb_input_mouse), widgets);
 
 	/* Setup the VLC side of things */
 	vlc_inst = libvlc_new(0, NULL);
