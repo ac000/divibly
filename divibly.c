@@ -71,13 +71,12 @@ static void free_channels(void)
 
 static void toggle_fullscreen(struct widgets *widgets)
 {
-	if (!fullscreen) {
+	if (!fullscreen)
 		gtk_window_fullscreen(GTK_WINDOW(widgets->window));
-		fullscreen = true;
-	} else {
+	else
 		gtk_window_unfullscreen(GTK_WINDOW(widgets->window));
-		fullscreen = false;
-	}
+
+	fullscreen = !fullscreen;
 }
 
 static void kill_osd(int sig, siginfo_t *si, void *uc)
