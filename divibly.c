@@ -361,7 +361,6 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 int main(int argc, char *argv[])
 {
 	struct widgets *widgets;
-	const GdkRGBA player_bg_color = { 0, 0, 0, 0 };
 	libvlc_event_manager_t *vevent;
 
 	if (argc < 2) {
@@ -391,8 +390,6 @@ int main(int argc, char *argv[])
 
 	/* Create the container for the video */
 	widgets->player = gtk_drawing_area_new();
-	gtk_widget_override_background_color(widgets->player, GTK_STATE_NORMAL,
-			&player_bg_color);
 	gtk_box_pack_start(GTK_BOX(widgets->box), widgets->player, TRUE, TRUE,
 			0);
 	gtk_widget_set_can_focus(widgets->player, TRUE);
