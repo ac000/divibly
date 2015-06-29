@@ -293,8 +293,13 @@ static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
 	}
 	case GDK_KEY_q:
 	case GDK_KEY_Q:
+			gtk_main_quit();
+			break;
 	case GDK_KEY_Escape:
-		gtk_main_quit();
+		if (fullscreen)
+			toggle_fullscreen(widgets);
+		else
+			gtk_main_quit();
 	}
 
 	return TRUE;
