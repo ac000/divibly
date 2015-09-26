@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g -std=c99 -O2
+CFLAGS=-Wall -g -std=c99 -O2 -fstack-protector-strong -fPIC -Wl,-z,now -pie
 INCS=`pkg-config --cflags gtk+-3.0 libvlc`
 LIBS=`pkg-config --libs gtk+-3.0 libvlc` -lxosd -lrt
 
