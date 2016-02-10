@@ -1,3 +1,6 @@
+Overview
+========
+
 divibly is a simple program to watch DVB-T streams using libvlc & GTK.
 
 It needs a channels.conf file in the zap format.
@@ -31,5 +34,20 @@ A double left mouse click toggles full screen.
 
 It has fairly simple requirements; GTK3, libVLC and xosd.
 
+
+License
+=======
+
 divibly is Licensed under the GNU General Public License version 2. See
 the COPYING file for details.
+
+
+Contributing
+============
+
+See CodingStyle. Also, code should be signed-off. This means adding a line
+that says "Signed-off-by: Name <email>" at the end of each commit, indicating
+that you wrote the code and have the right to pass it on as an open source
+patch.
+
+See: http://developercertificate.org/
