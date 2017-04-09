@@ -1,7 +1,8 @@
 /*
  * divibly - A simple DVB-T viewer
  *
- * Copyright (C) 2014 - 2015	Andrew Clayton <andrew@digital-domain.net>
+ * Copyright (C) 2014 - 2015, 2017	Andrew Clayton
+ * 					<andrew@digital-domain.net>
  *
  * Licensed under the GNU General Public License V2
  * See COPYING
@@ -34,15 +35,18 @@
 
 enum { CHAN_NAME = 0, CHAN_IDX };
 
-static libvlc_media_player_t *media_player;
-static libvlc_instance_t *vlc_inst;
-static bool fullscreen = true;
 static int nr_channels;
-static int chan_idx;
 static xosd *osd_display;
 static timer_t osd_timerid;
 
-struct widgets {
+struct divibly {
+	libvlc_media_player_t *media_player;
+	libvlc_instance_t *vlc_inst;
+
+	int chan_idx;
+
+	bool fullscreen;
+
 	GtkWidget *window;
 	GtkWidget *player;
 	GtkWidget *box;
@@ -69,14 +73,14 @@ static void free_channels(void)
 	free(channels);
 }
 
-static void toggle_fullscreen(struct widgets *widgets)
+static void toggle_fullscreen(struct divibly *divibly)
 {
-	if (!fullscreen)
-		gtk_window_fullscreen(GTK_WINDOW(widgets->window));
+	if (!divibly->fullscreen)
+		gtk_window_fullscreen(GTK_WINDOW(divibly->window));
 	else
-		gtk_window_unfullscreen(GTK_WINDOW(widgets->window));
+		gtk_window_unfullscreen(GTK_WINDOW(divibly->window));
 
-	fullscreen = !fullscreen;
+	divibly->fullscreen = !divibly->fullscreen;
 }
 
 static void kill_osd(int sig, siginfo_t *si, void *uc)
@@ -129,7 +133,7 @@ static void set_osd(const char *msg)
 	set_osd_timer();
 }
 
-static void set_spu(void)
+static void set_spu(struct divibly *divibly)
 {
 	static int spu = -1;
 	libvlc_track_description_t *desc;
@@ -142,7 +146,7 @@ static void set_spu(void)
 	}
 
 	/* Find the subtitle id */
-	desc = libvlc_video_get_spu_description(media_player);
+	desc = libvlc_video_get_spu_description(divibly->media_player);
 	while (desc) {
 		spu = desc->i_id;
 		if (spu > -1)
@@ -156,7 +160,7 @@ static void set_spu(void)
 		set_osd("Subtitles: On");
 
 out:
-	libvlc_video_set_spu(media_player, spu);
+	libvlc_video_set_spu(divibly->media_player, spu);
 }
 
 static void get_channel_info(const char *channels_conf,
@@ -189,47 +193,47 @@ static void get_channel_info(const char *channels_conf,
 	fclose(fp);
 }
 
-static void play_channel(void)
+static void play_channel(struct divibly *divibly)
 {
 	libvlc_media_t *media;
 	char f_opt[64];
 	char b_opt[64];
 	char p_opt[64];
 
-	if (chan_idx >= nr_channels)
-		chan_idx = 0;
-	else if (chan_idx < 0)
-		chan_idx = nr_channels - 1;
+	if (divibly->chan_idx >= nr_channels)
+		divibly->chan_idx = 0;
+	else if (divibly->chan_idx < 0)
+		divibly->chan_idx = nr_channels - 1;
 
 	snprintf(f_opt, sizeof(f_opt), ":dvb-frequency=%u",
-			channels[chan_idx].freq);
+			channels[divibly->chan_idx].freq);
 	snprintf(b_opt, sizeof(b_opt), ":dvb-bandwidth=%u",
-			channels[chan_idx].bandwidth);
+			channels[divibly->chan_idx].bandwidth);
 	snprintf(p_opt, sizeof(p_opt), ":program=%u",
-			channels[chan_idx].pid);
+			channels[divibly->chan_idx].pid);
 
-	media = libvlc_media_new_location(vlc_inst, "dvb://");
+	media = libvlc_media_new_location(divibly->vlc_inst, "dvb://");
 	libvlc_media_add_option(media, f_opt);
 	libvlc_media_add_option(media, b_opt);
 	libvlc_media_add_option(media, p_opt);
-	libvlc_media_player_set_media(media_player, media);
+	libvlc_media_player_set_media(divibly->media_player, media);
 	libvlc_media_release(media);
 
-	libvlc_media_player_play(media_player);
+	libvlc_media_player_play(divibly->media_player);
 }
 
 static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
-			  struct widgets *widgets)
+			  struct divibly *divibly)
 {
-	if (!gtk_widget_has_focus(widgets->chan_srch))
+	if (!gtk_widget_has_focus(divibly->chan_srch))
 		return FALSE;
 
 	switch (event->keyval) {
 	case GDK_KEY_Escape:
 		/* cancel channel search */
-		gtk_widget_hide(widgets->chan_srch);
-		gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), "");
-		gtk_widget_grab_focus(widgets->player);
+		gtk_widget_hide(divibly->chan_srch);
+		gtk_entry_set_text(GTK_ENTRY(divibly->chan_srch), "");
+		gtk_widget_grab_focus(divibly->player);
 
 		return TRUE;
 	}
@@ -239,52 +243,52 @@ static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
 }
 
 static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
-			      struct widgets *widgets)
+			      struct divibly *divibly)
 {
 	switch (event->keyval) {
 	case GDK_KEY_f:
 	case GDK_KEY_F:
-		toggle_fullscreen(widgets);
+		toggle_fullscreen(divibly);
 		break;
 	case GDK_KEY_z:
 	case GDK_KEY_Z:
-		gtk_window_resize(GTK_WINDOW(widgets->window), WINDOW_W,
+		gtk_window_resize(GTK_WINDOW(divibly->window), WINDOW_W,
 				WINDOW_H);
 		break;
 	case GDK_KEY_r:
 	case GDK_KEY_R:
-		play_channel();
+		play_channel(divibly);
 		break;
 	case GDK_KEY_0:
-		chan_idx = 9;
-		play_channel();
+		divibly->chan_idx = 9;
+		play_channel(divibly);
 		break;
 	case GDK_KEY_1 ... GDK_KEY_9:
-		chan_idx = event->keyval - GDK_KEY_1;
-		play_channel();
+		divibly->chan_idx = event->keyval - GDK_KEY_1;
+		play_channel(divibly);
 		break;
 	case GDK_KEY_Up:
-		chan_idx++;
-		play_channel();
+		divibly->chan_idx++;
+		play_channel(divibly);
 		break;
 	case GDK_KEY_Down:
-		chan_idx--;
-		play_channel();
+		divibly->chan_idx--;
+		play_channel(divibly);
 		break;
 	case GDK_KEY_s:
 	case GDK_KEY_S:
-		set_spu();
+		set_spu(divibly);
 		break;
 	case GDK_KEY_slash:
-		gtk_widget_grab_focus(widgets->chan_srch);
-		gtk_widget_show(widgets->chan_srch);
+		gtk_widget_grab_focus(divibly->chan_srch);
+		gtk_widget_show(divibly->chan_srch);
 		break;
 	case GDK_KEY_m:
 	case GDK_KEY_M: {
 		bool mute;
 
-		libvlc_audio_toggle_mute(media_player);
-		mute = libvlc_audio_get_mute(media_player);
+		libvlc_audio_toggle_mute(divibly->media_player);
+		mute = libvlc_audio_get_mute(divibly->media_player);
 		if (!mute)
 			set_osd("Mute: on");
 		else
@@ -296,8 +300,8 @@ static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
 			gtk_main_quit();
 			break;
 	case GDK_KEY_Escape:
-		if (fullscreen)
-			toggle_fullscreen(widgets);
+		if (divibly->fullscreen)
+			toggle_fullscreen(divibly);
 		else
 			gtk_main_quit();
 	}
@@ -306,48 +310,49 @@ static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
 }
 
 static gboolean cb_input_mouse(GtkWidget *player, GdkEventKey *event,
-			       struct widgets *widgets)
+			       struct divibly *divibly)
 {
 	if (event->type == GDK_2BUTTON_PRESS)
-		toggle_fullscreen(widgets);
+		toggle_fullscreen(divibly);
 
 	return TRUE;
 }
 
 static gboolean goto_channel(GtkEntryCompletion *widget, GtkTreeModel *model,
-			     GtkTreeIter *iter, struct widgets *widgets)
+			     GtkTreeIter *iter, struct divibly *divibly)
 {
 	char *chan;
 
-	gtk_tree_model_get(model, iter, CHAN_NAME, &chan, CHAN_IDX, &chan_idx,
-			-1);
-	gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), chan);
+	gtk_tree_model_get(model, iter, CHAN_NAME, &chan, CHAN_IDX,
+			&divibly->chan_idx, -1);
+	gtk_entry_set_text(GTK_ENTRY(divibly->chan_srch), chan);
 	g_free(chan);
-	play_channel();
-	gtk_widget_hide(widgets->chan_srch);
-	gtk_entry_set_text(GTK_ENTRY(widgets->chan_srch), "");
-	gtk_widget_grab_focus(widgets->player);
+	play_channel(divibly);
+	gtk_widget_hide(divibly->chan_srch);
+	gtk_entry_set_text(GTK_ENTRY(divibly->chan_srch), "");
+	gtk_widget_grab_focus(divibly->player);
 
 	return TRUE;
 }
 
-static void cb_realize(GtkWidget *widget, gpointer data)
+static void cb_realize(GtkWidget *widget, struct divibly *divibly)
 {
-	libvlc_media_player_set_xwindow(media_player, GDK_WINDOW_XID(
+	libvlc_media_player_set_xwindow(divibly->media_player, GDK_WINDOW_XID(
 				gtk_widget_get_window(widget)));
 
-	libvlc_video_set_deinterlace(media_player, "yadif2x");
+	libvlc_video_set_deinterlace(divibly->media_player, "yadif2x");
 
-	play_channel();
+	play_channel(divibly);
 }
 
 static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 {
-	GtkWindow *window = GTK_WINDOW(data);
+	struct divibly *divibly = data;
+	GtkWindow *window = GTK_WINDOW(divibly->window);
 	char title[255];
 
 	snprintf(title, sizeof(title), "divibly (%s)",
-			channels[chan_idx].name);
+			channels[divibly->chan_idx].name);
 	gtk_window_set_title(window, title);
 
 	if (osd_timerid) {
@@ -358,14 +363,15 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 	osd_display = xosd_create(1);
 	xosd_set_font(osd_display, OSD_FONT);
 	xosd_set_colour(osd_display, "white");
-	xosd_display(osd_display, 0, XOSD_string, channels[chan_idx].name);
+	xosd_display(osd_display, 0, XOSD_string,
+			channels[divibly->chan_idx].name);
 
 	set_osd_timer();
 }
 
 int main(int argc, char *argv[])
 {
-	struct widgets *widgets;
+	struct divibly *divibly;
 	libvlc_event_manager_t *vevent;
 
 	if (argc < 2) {
@@ -375,73 +381,74 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	widgets = g_slice_new(struct widgets);
+	divibly = g_slice_new(struct divibly);
 
 	/* Create the main window */
-	widgets->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(widgets->window, "destroy", G_CALLBACK(gtk_main_quit),
+	divibly->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(divibly->window, "destroy", G_CALLBACK(gtk_main_quit),
 			NULL);
-	g_signal_connect(widgets->window, "key_press_event",
-			G_CALLBACK(cb_inputw), widgets);
-	gtk_container_set_border_width(GTK_CONTAINER(widgets->window), 0);
-	gtk_window_set_default_size(GTK_WINDOW(widgets->window), WINDOW_W,
+	g_signal_connect(divibly->window, "key_press_event",
+			G_CALLBACK(cb_inputw), divibly);
+	gtk_container_set_border_width(GTK_CONTAINER(divibly->window), 0);
+	gtk_window_set_default_size(GTK_WINDOW(divibly->window), WINDOW_W,
 			WINDOW_H);
-	gtk_window_fullscreen(GTK_WINDOW(widgets->window));
-	gtk_window_set_title(GTK_WINDOW(widgets->window), "divibly");
+	gtk_window_fullscreen(GTK_WINDOW(divibly->window));
+	gtk_window_set_title(GTK_WINDOW(divibly->window), "divibly");
 
-	widgets->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_set_homogeneous(GTK_BOX(widgets->box), FALSE);
-	gtk_container_add(GTK_CONTAINER(widgets->window), widgets->box);
+	divibly->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_box_set_homogeneous(GTK_BOX(divibly->box), FALSE);
+	gtk_container_add(GTK_CONTAINER(divibly->window), divibly->box);
 
 	/* Create the container for the video */
-	widgets->player = gtk_drawing_area_new();
-	gtk_box_pack_start(GTK_BOX(widgets->box), widgets->player, TRUE, TRUE,
+	divibly->player = gtk_drawing_area_new();
+	gtk_box_pack_start(GTK_BOX(divibly->box), divibly->player, TRUE, TRUE,
 			0);
-	gtk_widget_set_can_focus(widgets->player, TRUE);
-	gtk_widget_grab_focus(widgets->player);
-	gtk_widget_add_events(widgets->player, GDK_BUTTON_PRESS_MASK);
+	gtk_widget_set_can_focus(divibly->player, TRUE);
+	gtk_widget_grab_focus(divibly->player);
+	gtk_widget_add_events(divibly->player, GDK_BUTTON_PRESS_MASK);
 
 	/* Create a List Store to hold channel name and index */
-	widgets->liststore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-	get_channel_info(argv[1], widgets->liststore);
+	divibly->liststore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+	get_channel_info(argv[1], divibly->liststore);
 
 	/* Create a text entry/completion for doing channel searches */
-	widgets->chan_srch = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(widgets->box), widgets->chan_srch, FALSE,
+	divibly->chan_srch = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(divibly->box), divibly->chan_srch, FALSE,
 			FALSE, 0);
-	widgets->completion = gtk_entry_completion_new();
-	gtk_entry_completion_set_model(widgets->completion,
-			GTK_TREE_MODEL(widgets->liststore));
-	gtk_entry_completion_set_text_column(widgets->completion, CHAN_NAME);
-	gtk_entry_set_completion(GTK_ENTRY(widgets->chan_srch),
-			widgets->completion);
-	g_signal_connect(G_OBJECT(widgets->completion), "match-selected",
-			G_CALLBACK(goto_channel), widgets);
-	g_object_unref(widgets->completion);
-	g_signal_connect(widgets->player, "key_press_event",
-			G_CALLBACK(cb_input_keyb), widgets);
-	g_signal_connect(widgets->player, "button_press_event",
-			G_CALLBACK(cb_input_mouse), widgets);
+	divibly->completion = gtk_entry_completion_new();
+	gtk_entry_completion_set_model(divibly->completion,
+			GTK_TREE_MODEL(divibly->liststore));
+	gtk_entry_completion_set_text_column(divibly->completion, CHAN_NAME);
+	gtk_entry_set_completion(GTK_ENTRY(divibly->chan_srch),
+			divibly->completion);
+	g_signal_connect(G_OBJECT(divibly->completion), "match-selected",
+			G_CALLBACK(goto_channel), divibly);
+	g_object_unref(divibly->completion);
+	g_signal_connect(divibly->player, "key_press_event",
+			G_CALLBACK(cb_input_keyb), divibly);
+	g_signal_connect(divibly->player, "button_press_event",
+			G_CALLBACK(cb_input_mouse), divibly);
 
 	/* Setup the VLC side of things */
-	vlc_inst = libvlc_new(0, NULL);
-	libvlc_set_user_agent(vlc_inst, "divibly", NULL);
+	divibly->vlc_inst = libvlc_new(0, NULL);
+	libvlc_set_user_agent(divibly->vlc_inst, "divibly", NULL);
 
-	media_player = libvlc_media_player_new(vlc_inst);
-	g_signal_connect(G_OBJECT(widgets->player), "realize",
-			G_CALLBACK(cb_realize), NULL);
+	divibly->media_player = libvlc_media_player_new(divibly->vlc_inst);
+	g_signal_connect(G_OBJECT(divibly->player), "realize",
+			G_CALLBACK(cb_realize), divibly);
 
-	vevent = libvlc_media_player_event_manager(media_player);
+	vevent = libvlc_media_player_event_manager(divibly->media_player);
 	libvlc_event_attach(vevent, libvlc_MediaPlayerMediaChanged,
-			cb_set_title, widgets->window);
+			cb_set_title, divibly);
 
-	gtk_widget_show_all(widgets->window);
-	gtk_widget_hide(widgets->chan_srch);
+	divibly->fullscreen = true;
+	gtk_widget_show_all(divibly->window);
+	gtk_widget_hide(divibly->chan_srch);
 	gtk_main();
 
-	libvlc_media_player_release(media_player);
-	libvlc_release(vlc_inst);
-	g_slice_free(struct widgets, widgets);
+	libvlc_media_player_release(divibly->media_player);
+	libvlc_release(divibly->vlc_inst);
+	g_slice_free(struct divibly, divibly);
 	free_channels();
 
 	exit(EXIT_SUCCESS);
