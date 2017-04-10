@@ -297,8 +297,8 @@ static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
 	}
 	case GDK_KEY_q:
 	case GDK_KEY_Q:
-			gtk_main_quit();
-			break;
+		gtk_main_quit();
+		break;
 	case GDK_KEY_Escape:
 		if (divibly->fullscreen)
 			toggle_fullscreen(divibly);
