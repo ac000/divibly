@@ -441,6 +441,7 @@ int main(int argc, char *argv[])
 	libvlc_event_attach(vevent, libvlc_MediaPlayerMediaChanged,
 			cb_set_title, divibly);
 
+	divibly->chan_idx = 0;
 	divibly->fullscreen = true;
 	gtk_widget_show_all(divibly->window);
 	gtk_widget_hide(divibly->chan_srch);
