@@ -372,6 +372,7 @@ static void cb_set_title(const struct libvlc_event_t *ev, void *data)
 int main(int argc, char *argv[])
 {
 	struct divibly *divibly;
+	const char *libvlc_argv[] = { "--no-xlib", (const char *)NULL };
 	libvlc_event_manager_t *vevent;
 
 	if (argc < 2) {
@@ -430,7 +431,7 @@ int main(int argc, char *argv[])
 			G_CALLBACK(cb_input_mouse), divibly);
 
 	/* Setup the VLC side of things */
-	divibly->vlc_inst = libvlc_new(0, NULL);
+	divibly->vlc_inst = libvlc_new(1, libvlc_argv);
 	libvlc_set_user_agent(divibly->vlc_inst, "divibly", NULL);
 
 	divibly->media_player = libvlc_media_player_new(divibly->vlc_inst);
