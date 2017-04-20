@@ -5,6 +5,18 @@ divibly is a simple program to watch DVB-T streams using libvlc & GTK.
 
 It needs a channels.conf file in the zap format.
 
+You can create a suitable channels.conf like
+
+    $ dvbv5-scan /usr/share/dvbv5/dvb-t/<transmitter> -O zap -o channels.conf
+
+Where <transmitter> is a suitable file from that directory.
+
+On Fedora you will need the v4l-utils & dtv-scan-tables packages.
+
+
+Use
+===
+
 Run it like
 
     $ divibly channels.conf
