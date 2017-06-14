@@ -83,7 +83,7 @@ static void toggle_fullscreen(struct divibly *divibly)
 	divibly->fullscreen = !divibly->fullscreen;
 }
 
-static void kill_osd(int sig)
+static void kill_osd(int sig __attribute__((unused)))
 {
 	timer_delete(osd_timerid);
 
@@ -222,8 +222,8 @@ static void play_channel(struct divibly *divibly)
 	libvlc_media_player_play(divibly->media_player);
 }
 
-static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
-			  struct divibly *divibly)
+static gboolean cb_inputw(GtkWidget *player __attribute__((unused)),
+			  GdkEventKey *event, struct divibly *divibly)
 {
 	if (!gtk_widget_has_focus(divibly->chan_srch))
 		return FALSE;
@@ -242,8 +242,8 @@ static gboolean cb_inputw(GtkWidget *player, GdkEventKey *event,
 	return FALSE;
 }
 
-static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
-			      struct divibly *divibly)
+static gboolean cb_input_keyb(GtkWidget *player __attribute__((unused)),
+			      GdkEventKey *event, struct divibly *divibly)
 {
 	switch (event->keyval) {
 	case GDK_KEY_f:
@@ -309,8 +309,8 @@ static gboolean cb_input_keyb(GtkWidget *player, GdkEventKey *event,
 	return TRUE;
 }
 
-static gboolean cb_input_mouse(GtkWidget *player, GdkEventKey *event,
-			       struct divibly *divibly)
+static gboolean cb_input_mouse(GtkWidget *player __attribute__((unused)),
+			       GdkEventKey *event, struct divibly *divibly)
 {
 	if (event->type == GDK_2BUTTON_PRESS)
 		toggle_fullscreen(divibly);
@@ -318,7 +318,8 @@ static gboolean cb_input_mouse(GtkWidget *player, GdkEventKey *event,
 	return TRUE;
 }
 
-static gboolean goto_channel(GtkEntryCompletion *widget, GtkTreeModel *model,
+static gboolean goto_channel(GtkEntryCompletion *widget
+			     __attribute__((unused)), GtkTreeModel *model,
 			     GtkTreeIter *iter, struct divibly *divibly)
 {
 	char *chan;
@@ -345,7 +346,8 @@ static void cb_realize(GtkWidget *widget, struct divibly *divibly)
 	play_channel(divibly);
 }
 
-static void cb_set_title(const struct libvlc_event_t *ev, void *data)
+static void cb_set_title(const struct libvlc_event_t *ev
+			 __attribute__((unused)), void *data)
 {
 	struct divibly *divibly = data;
 	GtkWindow *window = GTK_WINDOW(divibly->window);
