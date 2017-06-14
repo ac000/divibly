@@ -83,7 +83,7 @@ static void toggle_fullscreen(struct divibly *divibly)
 	divibly->fullscreen = !divibly->fullscreen;
 }
 
-static void kill_osd(int sig, siginfo_t *si, void *uc)
+static void kill_osd(int sig)
 {
 	timer_delete(osd_timerid);
 
@@ -102,7 +102,7 @@ static void set_osd_timer(void)
 
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
-	action.sa_sigaction = kill_osd;
+	action.sa_handler = kill_osd;
 	sigaction(SIGRTMIN, &action, NULL);
 
 	sev.sigev_notify = SIGEV_SIGNAL;
